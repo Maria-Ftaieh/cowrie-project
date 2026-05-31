@@ -1,0 +1,90 @@
+
+
+import json
+import csv
+LOG_PATH = "var/log/cowrie/cowrie.json"
+
+
+def parse_logs():
+    events = []
+
+    with open(LOG_PATH, "r") as f:
+        for line in f:
+            try:
+                data = json.loads(line)
+
+                events.append({
+                    "time": data.get("timestamp"),
+                    "event": data.get("eventid"),
+                    "ip": data.get("src_ip"),
+                    "user": data.get("username"),
+                    "password": data.get("password"),
+                    "input": data.get("input")
+                })
+
+            except:
+                continue
+
+    return events
+
+
+def summarize(events):
+    print("\n--- SUMMARY ---")
+    print("Total events:", len(events))
+
+    ips = set()
+
+    print("\nRecent Events (clean format):\n")
+
+    for e in events[-5:]:
+        print(f"Time: {e['time']}")
+        print(f"Event: {e['event']}")
+        print(f"IP: {e['ip']}")
+        print(f"User: {e['user']}")
+        print(f"Input: {e['input']}")
+        print("-" * 30)
+
+        if e["ip"]:
+            ips.add(e["ip"])
+
+    print("\nUnique IPs:", len(ips))
+
+
+def score_threat(events):
+    score = 0
+
+    for e in events:
+        if e["event"] == "cowrie.login.failed":
+            score += 10
+
+        if e["input"]:
+            score += 5
+
+        if e["event"] == "cowrie.session.connect":
+            score += 2
+
+    print("\n--- THREAT SCORE ---")
+    print("Total Threat Score:", score)
+
+def save_to_csv(events):
+    filename = "cowrie_output.csv"
+
+    with open(filename, "w", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["time", "event", "ip", "user", "password", "input"]
+        )
+
+        writer.writeheader()
+        writer.writerows(events)
+
+    print("\nCSV saved as:", filename)
+
+if __name__ == "__main__":
+    logs = parse_logs()
+    summarize(logs)
+    score_threat(logs)
+    save_to_csv(logs)
+
+
+

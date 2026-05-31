@@ -1,0 +1,43 @@
+import json
+
+LOG_PATH = "var/log/cowrie/cowrie.json"
+
+def parse_logs():
+    events = []
+
+    with open(LOG_PATH, "r") as f:
+        for line in f:
+            try:
+                data = json.loads(line)
+
+                events.append({
+                    "time": data.get("timestamp"),
+                    "event": data.get("eventid"),
+                    "ip": data.get("src_ip"),
+                    "user": data.get("username"),
+                    "password": data.get("password"),
+                    "input": data.get("input")
+                })
+
+            except:
+                continue
+
+    return events
+
+
+def summarize(events):
+    print("\n--- SUMMARY ---")
+    print("Total events:", len(events))
+
+    ips = set(e["ip"] for e in events if e["ip"])
+    print("Unique IPs:", len(ips))
+
+    print("\nLast 5 events:")
+    for e in events[-5:]:
+        print(e)
+
+
+if __name__ == "__main__":
+    logs = parse_logs()
+    summarize(logs)
+
